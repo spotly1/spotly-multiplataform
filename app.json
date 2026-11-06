@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "spotly",
+    "slug": "spotly",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-notifications",
+      ["expo-image-picker", {
+        "photosPermission": "Spotly permite elegir fotos para tu perfil y publicaciones.",
+        "cameraPermission": "Spotly necesita usar la cámara para tomar fotos de tu perfil y publicaciones.",
+        "microphonePermission": false
+      }],
+      ["expo-location", {
+        "locationWhenInUsePermission": "Spotly usa tu ubicación solo cuando decidís agregarla a una publicación.",
+        "isIosBackgroundLocationEnabled": false,
+        "isAndroidBackgroundLocationEnabled": false,
+        "isAndroidForegroundServiceEnabled": false
+      }]
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
