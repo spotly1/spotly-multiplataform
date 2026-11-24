@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { pickPostImage, uploadPostImage } from '../services/profileImageService';
+import {
+  pickPostImage,
+  uploadPostImage,
+} from '../services/profileImageService';
 import { getCurrentLocation } from '../services/locationService';
 import { newPostId, publishPost } from '../services/postService';
 import { publishErrorMessage } from '../services/publishErrors';
@@ -16,14 +19,26 @@ export function useCreatePost(uid, onPublished) {
   const alive = useRef(true);
   const uploaded = useRef(null);
   const draft = useRef(null);
-  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   async function perform(label, action) {
     if (pending.current) return;
-    pending.current = true; setPhase(label); setError(null);
-    try { await action(); }
-    catch (failure) {
-      if (__DEV__) console.warn('[Spotly/publicar]', failure.code || failure.name || 'unknown');
+    pending.current = true;
+    setPhase(label);
+    setError(null);
+    try {
+      await action();
+    } catch (failure) {
+      if (__DEV__)
+        console.warn(
+          '[Spotly/publicar]',
+          failure.code || failure.name || 'unknown'
+        );
       if (alive.current) setError(publishErrorMessage(failure));
     } finally {
       pending.current = false;
@@ -34,7 +49,10 @@ export function useCreatePost(uid, onPublished) {
     if (submitted) return;
     return perform('Preparando foto…', async () => {
       const selected = await pickPostImage(camera);
-      if (selected && alive.current) { setImage(selected); uploaded.current = null; }
+      if (selected && alive.current) {
+        setImage(selected);
+        uploaded.current = null;
+      }
     });
   };
   const locate = () => {
@@ -44,29 +62,89 @@ export function useCreatePost(uid, onPublished) {
       if (alive.current) setLocation(point);
     });
   };
+
+  const selectLocation = (point) => {
+    if (submitted || pending.current) return;
+
+    if (
+      !Number.isFinite(point?.latitude) ||
+      !Number.isFinite(point?.longitude) ||
+      Math.abs(point.latitude) > 90 ||
+      Math.abs(point.longitude) > 180
+    ) {
+      setError('La ubicación seleccionada no es válida.');
+      return;
+    }
+
+    setLocation({
+      latitude: point.latitude,
+      longitude: point.longitude,
+    });
+
+    setError(null);
+  };
+
   async function publish() {
     if (pending.current) return;
     if (!image || !description.trim() || description.trim().length > 1000) {
-      setError('Elegí una foto y escribí una descripción de hasta 1000 caracteres.'); return;
+      setError(
+        'Elegí una foto y escribí una descripción de hasta 1000 caracteres.'
+      );
+      return;
     }
     return perform('Subiendo foto…', async () => {
       await requireConnection();
-      if (!uploaded.current) uploaded.current = await uploadPostImage(uid, image);
+      if (!uploaded.current)
+        uploaded.current = await uploadPostImage(uid, image);
       if (!alive.current) return;
-      if (!draft.current) draft.current = { id: newPostId(), description, location, image: uploaded.current };
+      if (!draft.current)
+        draft.current = {
+          id: newPostId(),
+          description,
+          location,
+          image: uploaded.current,
+        };
       // Congelar el intento hasta confirmar su resultado evita duplicar o cambiar un envío incierto.
-      setSubmitted(true); setPhase('Publicando…');
+      setSubmitted(true);
+      setPhase('Publicando…');
       const data = draft.current;
-      await publishPost(data.id, uid, data.image, data.description, data.location);
+      await publishPost(
+        data.id,
+        uid,
+        data.image,
+        data.description,
+        data.location
+      );
       if (alive.current) onPublished();
     });
   }
   return {
-    image, description, location, phase, error, submitted, busy: !!phase,
+    image,
+    description,
+    location,
+    phase,
+    error,
+    submitted,
+    busy: !!phase,
     dirty: !!image || !!description || !!location,
-    select, locate, publish,
-    changeDescription: (value) => { if (!submitted && !pending.current) { setDescription(value); setError(null); } },
-    removeImage: () => { if (!submitted && !pending.current) { setImage(null); uploaded.current = null; } },
-    removeLocation: () => { if (!submitted && !pending.current) setLocation(null); },
+    select,
+    locate,
+    selectLocation,
+    publish,
+    changeDescription: (value) => {
+      if (!submitted && !pending.current) {
+        setDescription(value);
+        setError(null);
+      }
+    },
+    removeImage: () => {
+      if (!submitted && !pending.current) {
+        setImage(null);
+        uploaded.current = null;
+      }
+    },
+    removeLocation: () => {
+      if (!submitted && !pending.current) setLocation(null);
+    },
   };
 }
